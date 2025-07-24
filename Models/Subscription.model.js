@@ -1,7 +1,8 @@
 import { ServerMonitoringMode } from "mongodb";
 import mongoose from "mongoose";
+import subscriptionRouter from "../ROUTES/subscrition.route";
 
-const SubscritionSchem = mongoose.Schema({
+const SubscritionSchema = mongoose.Schema({
   name: {
     type: String,
     required: [true, "name is required"],
@@ -80,4 +81,28 @@ const SubscritionSchem = mongoose.Schema({
       index: true,
     },
   },
+});         
+
+//auto calculating the renewalDate
+
+SubscriptionSchema.pre("save", function (next) {
+  if (!this.renewalDate) {
+    const renewalPeriods = {
+      daily: 1,
+      weekly : 7,
+      monthly: 30,
+      yearly: 365,
+    };
+    this.renewalDate = new Date(this.startDate)
+      this.renewalDate.setDate(this.startDate.getDate() + renewalPeriods[this.frequency]); 
+  }
+  //auto update the status
+  if(this.renewalDate < new Date()){
+    this.status = "expired";
+  }
+   
+  next();
 });
+
+const Subscription = mongoose.model("Subscription", SubscritionSchema);
+export default Subscription;
